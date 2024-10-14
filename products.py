@@ -61,21 +61,27 @@ def borrarProducto(id):
                   INNER JOIN size t ON t.ID = s.Size_ID WHERE s.ID= ?"""
     cur.execute(sentSql1, (id,))
     producto = [column[0] for column in cur.description]
-    
+    producto_data = cur.fetchall()
+
+    if not producto_data:
+        return jsonify({"error": "Producto no encontrado"}), 404
+
     curC = mari.cursor()
     sentSql2 =  """SELECT *  FROM size WHERE ID= ?"""
     curC.execute(sentSql2, (id,))
     size = [column[0] for column in curC.description]
-    
+    size_data = curC.fetchall()
 
-    tabla = [dict(zip(producto, row)) for row in cur.fetchall()]
-    tablaSize = [dict(zip(size, row)) for row in curC.fetchall()]
+    tabla = [dict(zip(producto, row)) for row in producto_data]
+    tablaSize = [dict(zip(size, row)) for row in size_data]
 
     if request.method  == 'DELETE':
         qborrar = """DELETE FROM products WHERE ID=?"""
         cur.execute(qborrar, (id,))
-
+        mari.commit()
+        return jsonify({"message": "Producto borrado exitosamente"}), 200
     return jsonify(tabla, tablaSize)
+    
 
       
 
