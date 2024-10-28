@@ -1,7 +1,7 @@
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import mariadb
-
+from mariadb import Error
 app = Flask(__name__)
 
 # Configurar CORS
@@ -88,5 +88,45 @@ def borrarProducto(id):
     
     return jsonify(tabla, tablaSize)
 
+<<<<<<< HEAD
 if __name__ == '__main__':
     app.run(debug=True)
+=======
+
+from flask import jsonify
+import mariadb
+from mariadb import Error
+
+@app.route("/products45/<name>")
+def buscar_producto(name):
+    try:
+        # Establecer conexión a la base de datos
+        mari = mariadb.connect(
+            user="uniondepo",
+            password="uniondepo111",
+            host="10.9.120.5",
+            database="uniondepo"
+        )
+        cursor = mari.cursor()  # Crear un cursor para ejecutar consultas
+
+        sql_select_query = """SELECT * FROM products WHERE Name LIKE %s"""
+        cursor.execute(sql_select_query, ('%' + name + '%',))
+        resultados = cursor.fetchall()
+
+        if resultados:
+            productos = [
+                {"ID": producto[0], "Nombre": producto[1], "Precio": producto[2], "Cantidad": producto[3]}
+                for producto in resultados
+            ]
+            return jsonify(productos)  # Retornar resultados en formato JSON
+        else:
+            return jsonify({"message": "No se encontraron productos."}), 404  # Manejo de no coincidencias
+    except Error as e:
+        return jsonify({"error": f"Error al conectar a la base de datos: {e}"}), 500  # Manejo de errores
+    finally:
+        # Cerrar conexiones y cursores
+        if 'mari' in locals():
+            cursor.close()
+            mari.close()
+
+>>>>>>> 05446c63bc989200fcef43db7ede5beb1c805438
