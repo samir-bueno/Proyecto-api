@@ -7,7 +7,7 @@ app = Flask(__name__)
 def Productos():
     pagina = None
     filtro = None
-    elementos_por_pagina = 5  # Define this to avoid uninitialized variable error
+    elementos_por_pagina = 8  # Define this to avoid uninitialized variable error
 
     if 'pagina' in request.args:
         pagina = int(request.args['pagina'])
@@ -33,7 +33,7 @@ def Productos():
         else:
             paginas_descartadas = pagina - 1
             elementos_descartados = paginas_descartadas * elementos_por_pagina
-            query = "SELECT * FROM products LIMIT ? OFFSET ?"
+            query = "SELECT * FROM products ORDER BY Year_ID DESC LIMIT ? OFFSET ?"
             cur.execute(query, (elementos_por_pagina, elementos_descartados))
     else:
         # You might want to implement the filtering logic here
