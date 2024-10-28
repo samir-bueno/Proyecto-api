@@ -6,7 +6,7 @@ app = Flask(__name__)
 @app.route("/products")
 def Productos():
     mari = mariadb.connect(
-        user = "uniondepo",
+        user="uniondepo",
         password ="uniondepo111",
         host ="10.9.120.5",
         database= "uniondepo"
