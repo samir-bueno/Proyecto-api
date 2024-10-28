@@ -88,6 +88,7 @@ def borrarProducto(id):
     
     return jsonify(tabla, tablaSize)
 
+<<<<<<< HEAD
 if __name__ == '__main__':
    app.run(debug=True)
 
@@ -130,3 +131,5 @@ def buscar_producto(name):
            cursor.close()
            mari.close()
 
+=======
+>>>>>>> 1abd16fa3b6ee093b4d02d0a69c0afe66a35df2d
