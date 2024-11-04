@@ -33,8 +33,8 @@ def users():
 
 
 # Selecciona un producto y permite borrar
-@app.route("/users/<int:id>", methods=('POST', 'DELETE'))
-def borrarProducto(id):
+@app.route("/users/<int:id>", methods=('GET', 'POST', 'DELETE'))
+def manejar_usuario(id):
     mari = mariadb.connect(
         user="uniondepo",
         password="uniondepo111",
@@ -42,29 +42,45 @@ def borrarProducto(id):
         database="uniondepo"
     )
     cur = mari.cursor()
-    sentSql1 = """SELECT u.name, u.lastname, u.email, u.password, u.address, u.phone_number, c.comuna, r.rol FROM users u 
-                    INNER JOIN comunas c ON c.ID = u.Comuna_id 
-                    INNER JOIN rols r on r.ID = c.ID;"""
-    cur.execute(sentSql1, (id,))
-    usuario = [column[0] for column in cur.description]
-    usuario_data = cur.fetchall()
 
-    if not usuario_data:
-        return jsonify({"error": "usuario no encontrado"}), 404
+    if request.method == 'GET':
+        sentSql1 = """SELECT name, email, password FROM users WHERE ID = ?"""
+        cur.execute(sentSql1, (id,))
+        usuario_data = cur.fetchall()
 
-    tabla = [dict(zip(usuario, row)) for row in usuario_data]
+        if not usuario_data:
+            return jsonify({"error": "usuario no encontrado"}), 404
+
+        # Convertir a un diccionario y manejar posibles bytes
+        tabla = []
+        for row in usuario_data:
+            user_dict = {
+                "name": row[0],
+                "email": row[1],
+                "password": row[2].decode('utf-8') if isinstance(row[2], bytes) else row[2]
+            }
+            tabla.append(user_dict)
+
+        return jsonify(tabla), 200
 
     if request.method == 'POST':
-        qagregar = """INSERT INTO users(name, email, password) value(? , ? , ? );"""
-        cur.execute(qagregar, (id, ))
-        mari.commit()
-        return jsonify({"message": "usuario creado exitosamente"}), 200
+        data = request.json  # Obtén los datos del cuerpo de la solicitud
+        name = data.get('name')
+        email = data.get('email')
+        password = data.get('password')
 
+        if name and email and password:
+            qagregar = """INSERT INTO users(name, email, password) VALUES (?, ?, ?)"""
+            cur.execute(qagregar, (name, email, password))
+            mari.commit()
+            return jsonify({"message": "usuario creado exitosamente"}), 201
+        else:
+            return jsonify({"error": "Faltan parámetros"}), 400
 
     if request.method == 'DELETE':
         qborrar = """DELETE FROM users WHERE ID=?"""
         cur.execute(qborrar, (id,))
         mari.commit()
         return jsonify({"message": "usuario borrado exitosamente"}), 200
-    
-    return jsonify(tabla)
+
+    return jsonify({"error": "Método no permitido"}), 405
