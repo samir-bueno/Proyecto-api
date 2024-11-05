@@ -64,7 +64,6 @@ def borrarProducto(id):
 # Permite crear un nuevo producto
 @app.route("/products", methods=['POST'])
 def crearProducto():
-    # Establece la conexión a la base de datos
     try:
         mari = mariadb.connect(
             user="uniondepo",
@@ -76,38 +75,35 @@ def crearProducto():
         
         # Obtén los datos del cuerpo de la solicitud
         data = request.json
-        print("Datos recibidos:", data)  # Para depuración
-
         name = data.get('Name')
         description = data.get('Description')
         price = data.get('Price')
-        categories_id = data.get('Categories_ID')
-        size_id = data.get('Size_ID')
-        color_id = data.get('color_ID')
-        brand_id = data.get('Brand_ID')
-        year_id = data.get('Year_ID')
-        image = data.get('image')  # Puede ser None si no se proporciona
+        categories_id = data.get('Categories_ID')  # Este puede ser None
+        size_id = data.get('Size_ID')  # Este puede ser None
+        color_id = data.get('color_ID')  # Este puede ser None
+        brand_id = data.get('Brand_ID')  # Este puede ser None
+        year_id = data.get('Year_ID')  # Este puede ser None
+        image = data.get('image')  # Este puede ser None
 
-        # Verifica si todos los parámetros requeridos están presentes
-        if all([name, description, price is not None, categories_id is not None,
-                size_id is not None, color_id is not None, brand_id is not None,
-                year_id is not None]):
-            
-            # Inserta el nuevo producto
-            qagregar = """INSERT INTO products(Name, Description, Price, Categories_ID, 
-                                                Size_ID, color_ID, Brand_ID, Year_ID, image) 
-                          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
-            cur.execute(qagregar, (name, description, price, categories_id, 
-                                    size_id, color_id, brand_id, year_id, image))
-            mari.commit()
-            return jsonify({"message": "Producto creado exitosamente"}), 201
-        else:
-            return jsonify({"error": "Faltan parámetros"}), 400
+        # Verifica si los parámetros obligatorios están presentes
+        if not all([name, description, price]):
+            return jsonify({"error": "Faltan parámetros obligatorios"}), 400
+
+        # Si los parámetros opcionales son None, se pueden insertar como NULL en la base de datos
+        qagregar = """INSERT INTO products(Name, Description, Price, Categories_ID, 
+                                            Size_ID, color_ID, Brand_ID, Year_ID, image) 
+                      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"""
+        
+        # Ejecuta la inserción con los valores, permitiendo que algunos valores sean None (NULL)
+        cur.execute(qagregar, (name, description, price, categories_id, size_id, 
+                               color_id, brand_id, year_id, image))
+        mari.commit()
+        return jsonify({"message": "Producto creado exitosamente"}), 201
 
     except mariadb.Error as e:
-        print("Error al conectar a la base de datos:", e)
-        return jsonify({"error": "Error en el servidor."}), 500
-
+        return jsonify({"error": "Error en la base de datos", "message": str(e)}), 500
+    
     finally:
         if mari:
             mari.close()
+
