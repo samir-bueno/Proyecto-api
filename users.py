@@ -6,7 +6,7 @@ from mariadb import Error
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/users")
+@app.route("/users", methods=['POST', 'DELETE'])
 def users():
     mari = mariadb.connect(
         user="uniondepo",
@@ -28,8 +28,33 @@ def users():
                 continue
             row_data[col_name] = value
         tabla.append(row_data)
+        
+        if request.method == 'POST':
+            data = request.json  # Obtén los datos del cuerpo de la solicitud
+            name = data.get('name')
+            email = data.get('email')
+            password = data.get('password')
+
+            if name and email and password:
+                qagregar = """INSERT INTO users(name, email, password) VALUES (?, ?, ?)"""
+                cur.execute(qagregar, (name, email, password))
+                mari.commit()
+                return jsonify({"message": "usuario creado exitosamente"}), 201
+            else:
+                return jsonify({"error": "Faltan parámetros"}), 400
+
+        if request.method == 'DELETE':
+            qborrar = """DELETE FROM users WHERE ID=?"""
+            cur.execute(qborrar, (id,))
+            mari.commit()
+            return jsonify({"message": "usuario borrado exitosamente"}), 200
+
+        return jsonify({"error": "Método no permitido"}), 405
+
 
     return jsonify(tabla)
+
+    
 
 
 # Selecciona un producto y permite borrar
@@ -63,24 +88,4 @@ def manejar_usuario(id):
 
         return jsonify(tabla), 200
 
-    if request.method == 'POST':
-        data = request.json  # Obtén los datos del cuerpo de la solicitud
-        name = data.get('name')
-        email = data.get('email')
-        password = data.get('password')
-
-        if name and email and password:
-            qagregar = """INSERT INTO users(name, email, password) VALUES (?, ?, ?)"""
-            cur.execute(qagregar, (name, email, password))
-            mari.commit()
-            return jsonify({"message": "usuario creado exitosamente"}), 201
-        else:
-            return jsonify({"error": "Faltan parámetros"}), 400
-
-    if request.method == 'DELETE':
-        qborrar = """DELETE FROM users WHERE ID=?"""
-        cur.execute(qborrar, (id,))
-        mari.commit()
-        return jsonify({"message": "usuario borrado exitosamente"}), 200
-
-    return jsonify({"error": "Método no permitido"}), 405
+    
