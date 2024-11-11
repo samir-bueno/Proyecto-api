@@ -1,7 +1,9 @@
 from flask import Flask, jsonify, request
 import mariadb
+from flask_cors import CORS
 
 app = Flask(__name__)
+CORS(app)
 
 @app.route("/colors")
 def Colores():
