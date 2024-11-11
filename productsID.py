@@ -20,12 +20,8 @@ def UnProducto(id):
     cur.execute(sentSql1, (id,))
     producto = [column[0] for column in cur.description]
     
-    curC = mari.cursor()
-    sentSql2 = """SELECT * FROM size WHERE ID= ?"""
-    curC.execute(sentSql2, (id,))
-    size = [column[0] for column in curC.description]
+
     
     tabla = [dict(zip(producto, row)) for row in cur.fetchall()]
-    tablaSize = [dict(zip(size, row)) for row in curC.fetchall()]
     
-    return jsonify(tabla, tablaSize)
+    return jsonify(tabla)

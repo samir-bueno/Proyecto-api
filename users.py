@@ -1,3 +1,4 @@
+
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 import mariadb
@@ -6,55 +7,93 @@ from mariadb import Error
 app = Flask(__name__)
 CORS(app)
 
-@app.route("/users", methods=['POST', 'DELETE'])
+@app.route("/users", methods=['POST'])
 def users():
-    mari = mariadb.connect(
-        user="uniondepo",
-        password="uniondepo111",
-        host="10.9.120.5",
-        database="uniondepo"
-    )
-    cur = mari.cursor()
-    cur.execute("SELECT * FROM users")
+    try:
+        mari = mariadb.connect(
+            user="uniondepo",
+            password="uniondepo111",
+            host="10.9.120.5",
+            database="uniondepo"
+        )
+        cur = mari.cursor()
 
-    color = [column[0] for column in cur.description]
-    
-    tabla = []
-    for row in cur:
-        row_data = {}
-        for col_name, value in zip(color, row):
-            if isinstance(value, bytes):
-                # Omitir la columna si es de tipo bytes
-                continue
-            row_data[col_name] = value
-        tabla.append(row_data)
-        
         if request.method == 'POST':
-            data = request.json  # Obtén los datos del cuerpo de la solicitud
+            # Obtén los datos del cuerpo de la solicitud
+            data = request.json
             name = data.get('name')
             email = data.get('email')
             password = data.get('password')
 
-            if name and email and password:
-                qagregar = """INSERT INTO users(name, email, password) VALUES (?, ?, ?)"""
-                cur.execute(qagregar, (name, email, password))
-                mari.commit()
-                return jsonify({"message": "usuario creado exitosamente"}), 201
-            else:
+            # Validación de los datos
+            if not name or not email or not password:
                 return jsonify({"error": "Faltan parámetros"}), 400
 
-        if request.method == 'DELETE':
-            qborrar = """DELETE FROM users WHERE ID=?"""
-            cur.execute(qborrar, (id,))
+            # Comprobar si el usuario ya existe
+            cur.execute("SELECT * FROM users WHERE email = ?", (email,))
+            existing_user = cur.fetchone()
+            if existing_user:
+                return jsonify({"error": "El usuario ya existe con ese correo electrónico"}), 400
+
+            # Insertar el nuevo usuario
+            query = """INSERT INTO users (name, email, password) VALUES (?, ?, ?)"""
+            cur.execute(query, (name, email, password))
             mari.commit()
-            return jsonify({"message": "usuario borrado exitosamente"}), 200
 
-        return jsonify({"error": "Método no permitido"}), 405
+            return jsonify({"message": "Usuario creado exitosamente"}), 201
+
+    except Error as e:
+        return jsonify({"error": f"Error al conectar con la base de datos: {str(e)}"}), 500
+
+    finally:
+        if mari:
+            mari.close()
+
+    return jsonify({"error": "Método no permitido"}), 405
+
+if __name__ == "__main__":
+    app.run(debug=True)
 
 
-    return jsonify(tabla)
+@app.route("/login", methods=['POST'])
+def login():
+    try:
+        mari = mariadb.connect(
+            user="uniondepo",
+            password="uniondepo111",
+            host="10.9.120.5",
+            database="uniondepo"
+        )
+        cur = mari.cursor()
 
-    
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+
+        if not email or not password:
+            return jsonify({"error": "Faltan parámetros"}), 400
+
+        # Verificar las credenciales del usuario
+        cur.execute("SELECT name, email FROM users WHERE email = ? AND password = ?", (email, password))
+        user = cur.fetchone()
+
+        if user:
+            return jsonify({"message": "Inicio de sesión exitoso", "usuario": {"name": user[0], "email": user[1]}}), 200
+        else:
+            return jsonify({"error": "Credenciales incorrectas"}), 401
+
+    except Error as e:
+        return jsonify({"error": f"Error al conectar con la base de datos: {str(e)}"}), 500
+
+    finally:
+        if mari:
+            mari.close()
+
+if __name__ == "__main__":
+    app.run(debug=True)
+
+
+
 
 
 # Selecciona un producto y permite borrar
@@ -88,4 +127,3 @@ def manejar_usuario(id):
 
         return jsonify(tabla), 200
 
-    
