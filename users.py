@@ -74,11 +74,19 @@ def login():
             return jsonify({"error": "Faltan parámetros"}), 400
 
         # Verificar las credenciales del usuario
-        cur.execute("SELECT name, email FROM users WHERE email = ? AND password = ?", (email, password))
+        cur.execute("SELECT name, email, Rol_ID FROM users WHERE email = ? AND password = ?", (email, password))
         user = cur.fetchone()
 
         if user:
-            return jsonify({"message": "Inicio de sesión exitoso", "usuario": {"name": user[0], "email": user[1]}}), 200
+            # Si el usuario existe, enviar el objeto con isAdmin
+            return jsonify({
+                "message": "Inicio de sesión exitoso",
+                "usuario": {
+                    "name": user[0],
+                    "email": user[1],
+                    "Rol_ID": user[2]  # Incluir isAdmin
+                }
+            }), 200
         else:
             return jsonify({"error": "Credenciales incorrectas"}), 401
 
@@ -88,6 +96,7 @@ def login():
     finally:
         if mari:
             mari.close()
+
 
 if __name__ == "__main__":
     app.run(debug=True)
